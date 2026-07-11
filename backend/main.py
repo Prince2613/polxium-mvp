@@ -1,3 +1,5 @@
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -198,3 +200,9 @@ Your answer:"""
             status_code=500,
             detail="Something went wrong. Try again."
         )
+        # Serve frontend files
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+@app.get("/app")
+def serve_app():
+    return FileResponse("frontend/index.html")

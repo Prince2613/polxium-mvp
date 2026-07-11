@@ -1,4 +1,7 @@
-const API = "http://127.0.0.1:8000";
+const API = window.location.hostname === "localhost" || 
+            window.location.hostname === "127.0.0.1"
+    ? "http://127.0.0.1:8000"
+    : "https://polxium-mvp.onrender.com";
 let currentSymbol = "";
 let currentData = null;
 let chartMode = "candle";
