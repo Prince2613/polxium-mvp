@@ -145,7 +145,10 @@ function drawMainChart(data) {
             decreasing: { line: { color: "#ef4444" } },
             name: currentSymbol
         };
+        const mlNoticeCandle = document.getElementById("mlNotice");
+    if (mlNoticeCandle) mlNoticeCandle.style.display = "none";
         Plotly.newPlot("mainChart", [trace], layout, plotConfig());
+    
     } else {
         const trace = {
             type: "scatter",
@@ -155,10 +158,15 @@ function drawMainChart(data) {
             line: { color: "#a78bfa", width: 2 },
             name: "Price"
         };
-
-        // Add SVR predicted line in line mode
+    
         let traces = [trace];
-        if (data.chart) {
+    
+        // Only show ML trend when enough data exists
+        // SVR needs minimum 60 data points to be meaningful
+        // Short periods like 1M and 3M don't have enough
+        const mlNotice = document.getElementById("mlNotice");
+    
+        if (data.chart && data.chart.dates && data.chart.dates.length >= 60) {
             traces.push({
                 type: "scatter",
                 mode: "lines",
@@ -171,9 +179,17 @@ function drawMainChart(data) {
                 },
                 name: "ML Trend"
             });
+            // Hide notice when ML trend shows
+            if (mlNotice) mlNotice.style.display = "none";
+        } else {
+            // Show notice when ML trend cannot display
+            if (mlNotice) mlNotice.style.display = "block";
         }
-
+    
+        const mlNoticeCandle = document.getElementById("mlNotice");
+if (mlNoticeCandle) mlNoticeCandle.style.display = "none";
         Plotly.newPlot("mainChart", traces, layout, plotConfig());
+        return;
     }
 }
 
