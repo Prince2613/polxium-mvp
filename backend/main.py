@@ -7,6 +7,38 @@ from dotenv import load_dotenv
 import requests
 import os
 
+# Common name to symbol mapping
+# Handles cases where user types company name instead of ticker
+NAME_TO_SYMBOL = {
+    "APPLE": "AAPL",
+    "GOOGLE": "GOOG",
+    "ALPHABET": "GOOG",
+    "MICROSOFT": "MSFT",
+    "AMAZON": "AMZN",
+    "TESLA": "TSLA",
+    "META": "META",
+    "FACEBOOK": "META",
+    "NETFLIX": "NFLX",
+    "NVIDIA": "NVDA",
+    "RELIANCE": "RELIANCE.NS",
+    "TCS": "TCS.NS",
+    "INFOSYS": "INFY.NS",
+    "INFY": "INFY.NS",
+    "HDFC": "HDFCBANK.NS",
+    "HDFCBANK": "HDFCBANK.NS",
+    "WIPRO": "WIPRO.NS",
+    "ICICI": "ICICIBANK.NS",
+    "ICICIBANK": "ICICIBANK.NS",
+    "BAJAJ": "BAJFINANCE.NS",
+    "TATAMOTORS": "TATAMOTORS.NS",
+    "TATA": "TATAMOTORS.NS",
+    "AIRTEL": "BHARTIARTL.NS",
+    "ZOMATO": "ZOMATO.NS",
+    "PAYTM": "PAYTM.NS",
+    "NIFTY": "^NSEI",
+    "SENSEX": "^BSESN",
+}
+
 # Load environment variables from .env file
 # WHY: Keeps API keys out of code
 # Safe to push to GitHub after this
@@ -58,7 +90,9 @@ def insights(symbol: str, period: str = "1y"):
     from backend.data import get_full_analysis_data, get_company_info
     from backend.model import generate_full_insights
 
-    symbol = symbol.upper().strip()
+    # Check if user typed a company name instead of ticker
+# Convert to proper symbol if found in mapping
+    symbol = NAME_TO_SYMBOL.get(symbol, symbol)
 
     # Smart symbol resolution
     # Try in this order:
