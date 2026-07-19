@@ -10,8 +10,10 @@ let currencySymbol = "₹";
 // ── QUICK PICK BUTTONS ────────────────────
 document.querySelectorAll(".quick-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-        document.getElementById("stockInput").value = btn.dataset.symbol;
-        runAnalysis();
+        const symbol = btn.dataset.symbol;
+        document.getElementById("stockInput").value = symbol;
+        currentSymbol = symbol;
+        setTimeout(() => runAnalysis(), 50);
     });
 });
 
@@ -20,7 +22,6 @@ document.getElementById("analyzeBtn").addEventListener("click", runAnalysis);
 document.getElementById("stockInput").addEventListener("keydown", e => {
     if (e.key === "Enter") runAnalysis();
 });
-
 // ── CHART TOGGLE ──────────────────────────
 document.getElementById("candleBtn").addEventListener("click", () => {
     chartMode = "candle";
@@ -46,14 +47,19 @@ document.getElementById("aboutToggle").addEventListener("click", () => {
 
 // ── MAIN ANALYSIS FUNCTION ────────────────
 async function runAnalysis() {
-    const symbol = document.getElementById("stockInput")
+    const rawInput = document.getElementById("stockInput")
         .value.trim().toUpperCase();
+    const symbol = rawInput.replace(/\s+/g, "");
     const period = document.getElementById("periodSelect").value;
 
     if (!symbol) {
-        showError("Please enter a stock symbol");
+        showError("Please enter a stock symbol or company name");
         return;
     }
+
+    const btn = document.getElementById("analyzeBtn");
+    btn.textContent = "ANALYZING...";
+    btn.disabled = true;
 
     currentSymbol = symbol;
     showLoading(true);
@@ -90,6 +96,9 @@ async function runAnalysis() {
         showError(err.message);
     } finally {
         showLoading(false);
+        const btn = document.getElementById("analyzeBtn");
+        btn.textContent = "ANALYZE";
+        btn.disabled = false;
     }
 }
 
@@ -297,13 +306,36 @@ function fillBollingerCard(bb) {
 
 // ── ABOUT SECTION ─────────────────────────
 function fillAboutSection(company) {
-    if (!company) return;
-    document.getElementById("companyDesc").textContent =
-        company.description || "No description available.";
-    document.getElementById("companyCountry").textContent =
-        company.country || "";
-    document.getElementById("companyWebsite").textContent =
-        company.website || "";
+    const descEl = document.getElementById("companyDesc");
+    const countryEl = document.getElementById("companyCountry");
+    const websiteEl = document.getElementById("companyWebsite");
+
+    if (!company) {
+        descEl.textContent = "Company information not available for this stock.";
+        countryEl.textContent = "";
+        websiteEl.textContent = "";
+        return;
+    }
+
+    const desc = company.description;
+    if (!desc || desc === "N/A" || desc.length < 20) {
+        descEl.textContent = "Detailed company description not available.";
+    } else {
+        descEl.textContent = desc;
+    }
+
+    countryEl.textContent = company.country && company.country !== "N/A"
+        ? company.country : "";
+
+    if (company.website && company.website !== "N/A") {
+        websiteEl.innerHTML = `<a href="${company.website}" 
+            target="_blank" 
+            style="color:#a78bfa; text-decoration:none;">
+            ${company.website}
+        </a>`;
+    } else {
+        websiteEl.textContent = "";
+    }
 }
 
 // ── AI CHATBOX ────────────────────────────
@@ -341,13 +373,27 @@ Verdict Summary: ${currentData.verdict.summary}
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question, context })
         });
-
+    
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.detail || "AI service error";
+            appendMessage(`Could not get answer: ${errMsg}`, "ai");
+            return;
+        }
+    
         const data = await res.json();
+    
+        if (!data.answer) {
+            appendMessage("Received empty response. Try again.", "ai");
+            return;
+        }
+    
         appendMessage(data.answer, "ai");
-
-    } catch {
+    
+    } catch (err) {
+        console.error("Ask error:", err);
         appendMessage(
-            "Could not get an answer right now. Try again.",
+            "Connection error. Check your internet and try again.",
             "ai"
         );
     }

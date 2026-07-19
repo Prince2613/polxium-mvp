@@ -31,25 +31,48 @@ def get_stock_data(symbol: str, period: str = "1y"):
 def get_company_info(symbol: str):
     """
     Fetches basic company details.
-    Used for the About section — hidden by default in UI.
+    Returns partial data even if some fields missing.
+    Never returns None if ticker exists.
     """
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
 
+        # yfinance sometimes returns empty dict
+        # Check for minimum viable data
+        if not info or len(info) < 3:
+            return {
+                "name": symbol,
+                "sector": "N/A",
+                "industry": "N/A",
+                "description": "N/A",
+                "country": "N/A",
+                "currency": "N/A",
+                "website": "N/A",
+            }
+
         return {
-            "name": info.get("longName", symbol),
-            "sector": info.get("sector", "N/A"),
-            "industry": info.get("industry", "N/A"),
-            "description": info.get("longBusinessSummary", "N/A"),
-            "country": info.get("country", "N/A"),
-            "currency": info.get("currency", "N/A"),
-            "website": info.get("website", "N/A"),
+            "name": info.get("longName") or info.get("shortName") or symbol,
+            "sector": info.get("sector") or "N/A",
+            "industry": info.get("industry") or "N/A",
+            "description": info.get("longBusinessSummary") or "N/A",
+            "country": info.get("country") or "N/A",
+            "currency": info.get("currency") or "N/A",
+            "website": info.get("website") or "N/A",
         }
 
     except Exception as e:
-        print(f"Company info error: {e}")
-        return None
+        print(f"Company info error for {symbol}: {e}")
+        # Return minimal data instead of None
+        return {
+            "name": symbol,
+            "sector": "N/A",
+            "industry": "N/A",
+            "description": "N/A",
+            "country": "N/A",
+            "currency": "N/A",
+            "website": "N/A",
+        }
 
 
 def calculate_rsi(close: pd.Series, period: int = 14) -> pd.Series:
